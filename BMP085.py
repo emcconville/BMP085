@@ -1,7 +1,7 @@
 from smbus import SMBus
 from time import sleep
 
-class BMP085(SMBus):
+class BMP085(object):
   port = 0x77
   AC1 = 0x00
   AC2 = 0x00
@@ -20,36 +20,37 @@ class BMP085(SMBus):
   MC  = 0x00
   MD  = 0x00
   oversampling_setting = 0x00
+  bus = None
   def __init__(self,bus,**kwargs):
-    SMBus.__init__(self,bus)
+    self.bus = SMBus(bus)
     if "port" in kwargs:
       self.address = kwargs["port"]
     self.__calibration__()
   def readInt(self,address):
-    self.write_byte(self.port,address)
-    msb = self.read_byte(self.port)
-    lsb = self.read_byte(self.port)
+    self.bus.write_byte(self.port,address)
+    msb = self.bus.read_byte(self.port)
+    lsb = self.bus.read_byte(self.port)
     return int( msb<<8 | lsb )
   def read(self,address):
-    self.write_byte(self.port,address)
-    return self.read_byte(self.port)
+    self.bus.write_byte(self.port,address)
+    return self.bus.read_byte(self.port)
   def getDeviceTemperature(self):
-    self.write_byte_data(self.port,0xFE,0x2E)
+    self.bus.write_byte_data(self.port,0xFE,0x2E)
     sleep(0.005) # Wait for it
     return self.readInt(0xF6)
   def getDevicePressure(self):
-    self.write_byte_data(self.port,0xF4,0x34+(self.oversampling_setting<<6))
+    self.bus.write_byte_data(self.port,0xF4,0x34+(self.oversampling_setting<<6))
     sleep(float(0x02+(0x03<<self.oversampling_setting))/1000)
-    self.write_byte(self.port,0xF6)
-    msb = self.read_byte(self.port)
-    lsb = self.read_byte(self.port)
-    xlsb = self.read_byte(self.port)
+    self.bus.write_byte(self.port,0xF6)
+    msb = self.bus.read_byte(self.port)
+    lsb = self.bus.read_byte(self.port)
+    xlsb = self.bus.read_byte(self.port)
     return (msb << 16 | lsb << 8 | xlsb) >> (8-self.oversampling_setting)
-  def calculateTemperature(deviceTemperature):
-    self.B5 = (((deviceTemperature - self.AC6) * self.AC5) >> 0x0F) \
-            + ((self.MC << 0x0B)/(sample1 + self.MD))
+  def calculateTemperature(self,deviceTemperature):
+    x1      = (((deviceTemperature - self.AC6) * self.AC5) >> 0x0F)
+    self.B5 = x1 + ((self.MC << 0x0B)/(x1 + self.MD))
     return (self.B5 + 0x08) >> 0x04
-  def calculatePressure(devicePressure):
+  def calculatePressure(self,devicePressure):
     self.B6 = self.B5 - 0x0FA0
     temp = (self.B2 * (self.B6 * self.B6) >> 0x0C) >> 0x0B \
          + (self.AC2 * self.B6) >> 0x0B
@@ -80,3 +81,9 @@ class BMP085(SMBus):
     self.MC  = self.readInt(0xBC)
     self.MD  = self.readInt(0xBE)
     return True
+
+
+if __name__ == '__main__':
+  device = BMP085(1)
+  print "Temp: ", float(device.calculateTemperature(device.getDeviceTemperature()) * 0.01)
+  print "Pres: ", device.calculatePressure(device.getDevicePressure())
