@@ -30,12 +30,12 @@ class BMP085(object):
     self.bus.write_byte(self.port,address)
     msb = self.bus.read_byte(self.port)
     lsb = self.bus.read_byte(self.port)
-    return int( msb<<8 | lsb )
+    return msb<<8 | lsb
   def read(self,address):
     self.bus.write_byte(self.port,address)
     return self.bus.read_byte(self.port)
   def getDeviceTemperature(self):
-    self.bus.write_byte_data(self.port,0xFE,0x2E)
+    self.bus.write_byte_data(self.port,0xF4,0x2E)
     sleep(0.005) # Wait for it
     return self.readInt(0xF6)
   def getDevicePressure(self):
@@ -48,7 +48,8 @@ class BMP085(object):
     return (msb << 16 | lsb << 8 | xlsb) >> (8-self.oversampling_setting)
   def calculateTemperature(self,deviceTemperature):
     x1      = (((deviceTemperature - self.AC6) * self.AC5) >> 0x0F)
-    self.B5 = x1 + ((self.MC << 0x0B)/(x1 + self.MD))
+    x2      = ((self.MC << 0x0B)/(x1 + self.MD))
+    self.B5 = x1 + x2
     return (self.B5 + 0x08) >> 0x04
   def calculatePressure(self,devicePressure):
     self.B6 = self.B5 - 0x0FA0
@@ -85,5 +86,5 @@ class BMP085(object):
 
 if __name__ == '__main__':
   device = BMP085(1)
-  print "Temp: ", float(device.calculateTemperature(device.getDeviceTemperature()) * 0.01)
+  print "Temp: ", float(device.calculateTemperature(device.getDeviceTemperature()) * 0.1)
   print "Pres: ", device.calculatePressure(device.getDevicePressure())
