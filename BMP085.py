@@ -19,38 +19,51 @@ class BMP085(object):
   MB  = 0x00
   MC  = 0x00
   MD  = 0x00
-  oversampling_setting = 0x00
+  oversampling_setting = 0x03
   bus = None
   def __init__(self,bus,**kwargs):
     self.bus = SMBus(bus)
     if "port" in kwargs:
       self.address = kwargs["port"]
     self.__calibration__()
-  def readInt(self,address):
-    self.bus.write_byte(self.port,address)
-    msb = self.bus.read_byte(self.port)
-    lsb = self.bus.read_byte(self.port)
-    return msb<<8 | lsb
+  def readSignedByte(self,address):
+    byte = self.bus.read_byte_data(self.port,address)
+    if byte > 127:
+      byte = byte - 256
+    return byte
+  def readUnSignedByte(self,address):
+   return self.bus.read_byte_data(self.port,address)
+  def readSignedInt(self,address):
+    msb = self.readSignedByte(address)
+    lsb = self.readUnSignedByte(address)
+    return ( msb<<8 ) + lsb
+  def readUnSignedInt(self,address):
+    msb = self.bus.read_byte_data(self.port,address)
+    lsb = self.bus.read_byte_data(self.port,address+1)
+    return ( msb<<8 ) + lsb
   def read(self,address):
     self.bus.write_byte(self.port,address)
     return self.bus.read_byte(self.port)
   def getDeviceTemperature(self):
     self.bus.write_byte_data(self.port,0xF4,0x2E)
     sleep(0.005) # Wait for it
-    return self.readInt(0xF6)
+    return self.readUnSignedInt(0xF6)
   def getDevicePressure(self):
     self.bus.write_byte_data(self.port,0xF4,0x34+(self.oversampling_setting<<6))
     sleep(float(0x02+(0x03<<self.oversampling_setting))/1000)
-    self.bus.write_byte(self.port,0xF6)
-    msb = self.bus.read_byte(self.port)
-    lsb = self.bus.read_byte(self.port)
-    xlsb = self.bus.read_byte(self.port)
-    return (msb << 16 | lsb << 8 | xlsb) >> (8-self.oversampling_setting)
+    #self.bus.write_byte(self.port,0xF6)
+    #msb = self.bus.read_byte(self.port)
+    #lsb = self.bus.read_byte(self.port)
+    #xlsb = self.bus.read_byte(self.port)
+    msb = self.bus.read_byte_data(self.port,0xF6);
+    lsb = self.bus.read_byte_data(self.port,0xF7)
+    xlsb = self.bus.read_byte_data(self.port,0xF8)
+    return (( msb << 16 ) + ( lsb << 8 ) + xlsb) >> (8-self.oversampling_setting)
   def calculateTemperature(self,deviceTemperature):
     x1      = (((deviceTemperature - self.AC6) * self.AC5) >> 0x0F)
     x2      = ((self.MC << 0x0B)/(x1 + self.MD))
     self.B5 = x1 + x2
-    return (self.B5 + 0x08) >> 0x04
+    return ((self.B5 + 0x08) >> 0x04) / 10.0
   def calculatePressure(self,devicePressure):
     self.B6 = self.B5 - 0x0FA0
     temp = (self.B2 * (self.B6 * self.B6) >> 0x0C) >> 0x0B \
@@ -70,21 +83,22 @@ class BMP085(object):
     return p + (x1 + x2 + 3791) >> 0x04
     
   def __calibration__(self):
-    self.AC1 = self.readInt(0xAA)
-    self.AC2 = self.readInt(0xAC)
-    self.AC3 = self.readInt(0xAE)
-    self.AC4 = self.readInt(0xB0)
-    self.AC5 = self.readInt(0xB2)
-    self.AC6 = self.readInt(0xB4)
-    self.B1  = self.readInt(0xB6)
-    self.B2  = self.readInt(0xB8)
-    self.MB  = self.readInt(0xBA)
-    self.MC  = self.readInt(0xBC)
-    self.MD  = self.readInt(0xBE)
+    self.AC1 = self.readSignedInt(0xAA)
+    self.AC2 = self.readSignedInt(0xAC)
+    self.AC3 = self.readSignedInt(0xAE)
+    self.AC4 = self.readUnSignedInt(0xB0)
+    self.AC5 = self.readUnSignedInt(0xB2)
+    self.AC6 = self.readUnSignedInt(0xB4)
+    self.B1  = self.readSignedInt(0xB6)
+    self.B2  = self.readSignedInt(0xB8)
+    self.MB  = self.readSignedInt(0xBA)
+    self.MC  = self.readSignedInt(0xBC)
+    self.MD  = self.readSignedInt(0xBE)
     return True
 
 
 if __name__ == '__main__':
   device = BMP085(1)
-  print "Temp: ", float(device.calculateTemperature(device.getDeviceTemperature()) * 0.1)
+  print "Temp: ", device.calculateTemperature(device.getDeviceTemperature()) 
+  print "RP  : ", device.getDevicePressure()
   print "Pres: ", device.calculatePressure(device.getDevicePressure())
