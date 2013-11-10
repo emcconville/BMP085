@@ -19,12 +19,14 @@ class Device(object):
   MB  = 0x00
   MC  = 0x00
   MD  = 0x00
-  oversampling_setting = 0x01
+  oversampling_setting = 0x00
   bus = None
   def __init__(self,bus,**kwargs):
     self.bus = SMBus(bus)
     if "port" in kwargs:
       self.address = kwargs["port"]
+    if "oversampling" in kwargs:
+      self.oversampling_setting = kwargs["oversampling"]
     self.__calibration__()
   def readByte(self,address):
     byte = self.bus.read_byte_data(self.port,address)
@@ -110,7 +112,7 @@ class Device(object):
 
 
 if __name__ == '__main__':
-  device = Device(1)
+  device = Device(1,oversampling=1)
   deviceTemperature = device.getDeviceTemperature()
   devicePressure    = device.getDevicePressure()
   print "Temperature : ", device.calculateTemperature(deviceTemperature)
