@@ -1,7 +1,7 @@
 from smbus import SMBus
 from time import sleep
 
-class BMP085(object):
+class Device(object):
   port = 0x77
   AC1 = 0x00
   AC2 = 0x00
@@ -57,12 +57,18 @@ class BMP085(object):
     msb <<= 0x10
     lsb <<= 0x08
     return ( msb + lsb + xlsb ) >> ( 0x08 - self.oversampling_setting )
-  def calculateTemperature(self,deviceTemperature):
+  def calculateTemperature(self,deviceTemperature=None):
+    if deviceTemperature is None:
+      deviceTemperature = getDeviceTemperature()
     x1      = (((deviceTemperature - self.AC6) * self.AC5) >> 0x0F)
     x2      = ((self.MC << 0x0B)/(x1 + self.MD))
     self.B5 = x1 + x2
     return ((self.B5 + 0x08) >> 0x04) / 10.0
-  def calculatePressure(self,deviceTemperature,devicePressure):
+  def calculatePressure(self,deviceTemperature=None,devicePressure=None):
+    if deviceTemperature is None:
+      deviceTemperature = getDeviceTemperature()
+    if devicePressure is None:
+      devicePressure = getDevicePressure()
     self.calculateTemperature(deviceTemperature)
     self.B6 = self.B5 - 0x0FA0
     x1 = (self.B2 * (self.B6 * self.B6) >> 0x0C) >> 0x0B
@@ -84,6 +90,10 @@ class BMP085(object):
     x2 = (-0x1CBD * p) >> 0x10
     p  = p + (( x1 + x2 + 0x0ECF ) >> 0x04 )
     return p
+  def calculateAltitude(self,deviceTemperature=None,devicePressure=None,basePressure=101325):
+    pressure = self.calculatePressure(deviceTemperature,devicePressure)
+    altitude = 44330.0 * (1.0 - pow(float(pressure) / float(basePressure), 0.190295))
+    return altitude
   def __calibration__(self):
     self.AC1 = self.readInt(0xAA)
     self.AC2 = self.readInt(0xAC)
@@ -100,8 +110,9 @@ class BMP085(object):
 
 
 if __name__ == '__main__':
-  device = BMP085(1)
-  rawTemp = device.getDeviceTemperature()
-  rawPres = device.getDevicePressure()
-  print "Temp: ", device.calculateTemperature(rawTemp)
-  print "Pres: ", device.calculatePressure(rawTemp,rawPres)
+  device = Device(1)
+  deviceTemperature = device.getDeviceTemperature()
+  devicePressure    = device.getDevicePressure()
+  print "Temperature : ", device.calculateTemperature(deviceTemperature)
+  print "Pressure    : ", device.calculatePressure(deviceTemperature,devicePressure)
+  print "Altitude    : ", device.calculateAltitude(deviceTemperature,devicePressure)
