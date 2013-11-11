@@ -48,7 +48,7 @@ class Device(object):
   def writeByte(self,address,value):
     self.bus.write_byte_data(self.port,address,value)
   def readByte(self,address):
-    byte = self.readUnsignedByte(self.port,address)
+    byte = self.readUnsignedByte(address)
     if byte > 127:
       byte = byte - 256
     return byte
@@ -59,8 +59,8 @@ class Device(object):
     lsb = self.readUnsignedByte(address)
     return ( msb << 8 ) + lsb
   def readUnsignedInt(self,address):
-    msb = self.readUnsignedByte(self.port,address)
-    lsb = self.readUnsignedByte(self.port,address+1)
+    msb = self.readUnsignedByte(address)
+    lsb = self.readUnsignedByte(address+1)
     return ( msb << 8 ) + lsb
   def getDeviceTemperature(self):
     self.writeByte(0xF4,0x2E)

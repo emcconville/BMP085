@@ -21,7 +21,7 @@ class App(object):
       self.record_csv()
     return self
   def record_csv(self):
-    data_line = """{pressure},{pressure},{altitude}\n""".format(self.data_dict())
+    data_line = """{temperature},{pressure},{altitude}\n""".format(**(self.data_dict()))
     if self.output == "stdout":
       sys.stdout.write(data_line)
     else:
@@ -46,4 +46,6 @@ if __name__ == "__main__":
         exit()
       key = key.strip(" -_")
       value = value.strip()
-      app.setattr(key,value)
+      setattr(app,key,value)
+  app.execute().record()
+
