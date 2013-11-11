@@ -1,3 +1,20 @@
+"""
+  This file is part of "Notes from barometric pressure sensor".
+
+  "Notes from barometric pressure sensor" is free software: you
+  can redistribute it and/or modify it under the terms of the
+  GNU General Public License as published by the Free Software
+  Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  Foobar is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+"""
 from smbus import SMBus
 from time import sleep
 
@@ -28,8 +45,10 @@ class Device(object):
     if "oversampling" in kwargs:
       self.oversampling_setting = kwargs["oversampling"]
     self.__calibration__()
+  def writeByte(self,address,value):
+    self.bus.write_byte_data(self.port,address,value)
   def readByte(self,address):
-    byte = self.bus.read_byte_data(self.port,address)
+    byte = self.readUnsignedByte(self.port,address)
     if byte > 127:
       byte = byte - 256
     return byte
@@ -38,20 +57,17 @@ class Device(object):
   def readInt(self,address):
     msb = self.readByte(address)
     lsb = self.readUnsignedByte(address)
-    return ( msb<<8 ) + lsb
-  def readUnsignedInt(self,address):
-    msb = self.bus.read_byte_data(self.port,address)
-    lsb = self.bus.read_byte_data(self.port,address+1)
     return ( msb << 8 ) + lsb
-  def read(self,address):
-    self.bus.write_byte(self.port,address)
-    return self.bus.read_byte(self.port)
+  def readUnsignedInt(self,address):
+    msb = self.readUnsignedByte(self.port,address)
+    lsb = self.readUnsignedByte(self.port,address+1)
+    return ( msb << 8 ) + lsb
   def getDeviceTemperature(self):
-    self.bus.write_byte_data(self.port,0xF4,0x2E)
+    self.writeByte(0xF4,0x2E)
     sleep(0.005) # Wait for it
     return self.readUnsignedInt(0xF6)
   def getDevicePressure(self):
-    self.bus.write_byte_data(self.port,0xF4,0x34 + ( self.oversampling_setting << 0x06))
+    self.writeByte(0xF4,0x34 + ( self.oversampling_setting << 0x06))
     sleep(float(0x02+(0x03<<self.oversampling_setting))/1000)
     msb  = self.readUnsignedByte(0xF6)
     lsb  = self.readUnsignedByte(0xF7)
