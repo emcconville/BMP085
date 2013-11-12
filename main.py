@@ -1,4 +1,5 @@
 import sys
+import time
 import BMP085
 
 class App(object):
@@ -21,7 +22,7 @@ class App(object):
       self.record_csv()
     return self
   def record_csv(self):
-    data_line = """{temperature},{pressure},{altitude}\n""".format(**(self.data_dict()))
+    data_line = """{temperature},{pressure},{altitude},{timestamp}\n""".format(**(self.data_dict()))
     if self.output == "stdout":
       sys.stdout.write(data_line)
     else:
@@ -33,6 +34,7 @@ class App(object):
     data["temperature"] = self.temperature
     data["pressure"]    = self.pressure
     data["altitude"]    = self.altitude
+    data["timestamp"]   = time.time()
     return data
     
 if __name__ == "__main__":
