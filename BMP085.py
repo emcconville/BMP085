@@ -7,10 +7,11 @@
   Foundation, either version 3 of the License, or
   (at your option) any later version.
 
-  Foobar is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+  "Notes from barometric pressure sensor" is distributed in the
+  hope that it will be useful, but WITHOUT ANY WARRANTY; without
+  even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+  PARTICULAR PURPOSE.  See the GNU General Public License for
+  more details.
 
   You should have received a copy of the GNU General Public License
   along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
@@ -49,19 +50,19 @@ class Device(object):
     self.bus.write_byte_data(self.port,address,value)
   def readByte(self,address):
     byte = self.readUnsignedByte(address)
-    if byte > 127:
-      byte = byte - 256
+    if byte > 0x7f:
+      byte = byte - 0x100
     return byte
   def readUnsignedByte(self,address):
    return self.bus.read_byte_data(self.port,address)
   def readInt(self,address):
     msb = self.readByte(address)
-    lsb = self.readUnsignedByte(address)
-    return ( msb << 8 ) + lsb
+    lsb = self.readUnsignedByte(address+1)
+    return ( msb << 0x08 ) + lsb
   def readUnsignedInt(self,address):
     msb = self.readUnsignedByte(address)
     lsb = self.readUnsignedByte(address+1)
-    return ( msb << 8 ) + lsb
+    return ( msb << 0x08 ) + lsb
   def getDeviceTemperature(self):
     self.writeByte(0xF4,0x2E)
     sleep(0.005) # Wait for it
