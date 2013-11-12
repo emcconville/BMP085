@@ -10,7 +10,7 @@ class App(object):
   sampling = 0
   
   def execute(self):
-    device = BMP085.Device(self.bus,port=self.device,oversampling=self.sampling)
+    device = BMP085.Device(int(self.bus),port=int(self.device),oversampling=int(self.sampling))
     rawTemperature = device.getDeviceTemperature()
     rawPressure    = device.getDevicePressure()
     self.temperature = device.calculateTemperature(rawTemperature)
@@ -29,6 +29,11 @@ class App(object):
       with open(self.output,"a") as file_handle:
         file_handle.write(data_line)
         file_handle.close()
+  def record_sql(self):
+    insert_query = """
+    INSERT INTO recordings (temperature,pressure,altitude,timestamp)
+    VALUES ({temperature},{pressure},{altitude},{timestamp})
+    """.format(**(self.data_dict()))
   def data_dict(self):
     data = dict()
     data["temperature"] = self.temperature
