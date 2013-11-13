@@ -113,6 +113,38 @@ class Device(object):
     pressure = self.calculatePressure(deviceTemperature,devicePressure)
     altitude = 44330.0 * (1.0 - pow(float(pressure) / float(basePressure), 0.190295))
     return altitude
+  def getCalibrationDictionary(self):
+      """
+      Create a dictionary of current device calibration.
+      """
+      calibration = dict()
+      calibration["AC1"] = self.AC1
+      calibration["AC2"] = self.AC2
+      calibration["AC3"] = self.AC3
+      calibration["AC4"] = self.AC4
+      calibration["AC5"] = self.AC5
+      calibration["AC6"] = self.AC6
+      calibration["B1"]  = self.B1
+      calibration["B2"]  = self.B2
+      calibration["MB"]  = self.MB
+      calibration["MC"]  = self.MC
+      calibration["MD"]  = self.MD
+      return calibration
+  def restoreCalibrationWithDictionary(self,calication):
+      """
+      Set device calibration from defined dictionary
+      """
+      self.AC1 = calibration["AC1"]
+      self.AC2 = calibration["AC2"]
+      self.AC3 = calibration["AC3"]
+      self.AC4 = calibration["AC4"]
+      self.AC5 = calibration["AC5"]
+      self.AC6 = calibration["AC6"]
+      self.B1  = calibration["B1"]
+      self.B2  = calibration["B2"]
+      self.MB  = calibration["MB"]
+      self.MC  = calibration["MC"]
+      self.MD  = calibration["MD"]
   def __calibration__(self):
     """
     Set calibration properties from device
