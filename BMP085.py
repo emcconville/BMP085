@@ -114,6 +114,9 @@ class Device(object):
     altitude = 44330.0 * (1.0 - pow(float(pressure) / float(basePressure), 0.190295))
     return altitude
   def __calibration__(self):
+    """
+    Set calibration properties from device
+    """
     self.AC1 = self.readInt(0xAA)
     self.AC2 = self.readInt(0xAC)
     self.AC3 = self.readInt(0xAE)
@@ -125,8 +128,6 @@ class Device(object):
     self.MB  = self.readInt(0xBA)
     self.MC  = self.readInt(0xBC)
     self.MD  = self.readInt(0xBE)
-    return True
-
 
 if __name__ == '__main__':
   device = Device(1,oversampling=1)
